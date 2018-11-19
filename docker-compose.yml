@@ -1,0 +1,81 @@
+version: '3.7'
+services:
+
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - jenkins
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./jenkins_home:/var/jenkins_home
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    ports:
+      - "50000:50000"
+      - "8080:8080"
+
+  selenium-hub:
+    image: selenium/hub:3.141.59-antimony
+    networks:
+      - jenkins
+    deploy:
+      replicas: 1
+    ports:
+      - "4444:4444"
+
+  # appium-node:
+  #   image: appium/appium
+  #   environment:
+  #   - CONNECT_TO_GRID=true
+  #   # - APPIUM_HOST="appium-node"
+  #   # - APPIUM_PORT=4724
+  #   # - SELENIUM_HOST="selenium-hub"
+  #   # - SELENIUM_PORT=4444 
+  #   - CUSTOM_NODE_CONFIG=true
+  #   volumes:
+  #   - ./node-nexus_5x_25.json:/root/nodeconfig.json:ro
+  #   - ./app:/root/tmp
+  #   networks:
+  #   - jenkins
+  #   deploy:
+  #     replicas: 1
+
+  android-emulator:
+    image: butomo1989/docker-android-x86-8.1
+    privileged: true
+    depends_on:
+      - selenium-hub
+    environment:
+      - DEVICE=Samsung Galaxy S6
+      - CONNECT_TO_GRID=true
+      - APPIUM=true
+      - SELENIUM_HOST=selenium-hub
+    networks:
+      - jenkins
+    ports:
+      - "6080:6080"
+  
+  android-emulator-8.0:
+    image: butomo1989/docker-android-x86-8.0
+    privileged: true
+    depends_on:
+      - selenium-hub
+    environment:
+      - DEVICE=Samsung Galaxy S6
+      - CONNECT_TO_GRID=true
+      - APPIUM=true
+      - SELENIUM_HOST=selenium-hub
+    networks:
+      - jenkins
+    ports:
+      - "6081:6080"
+
+networks:
+  jenkins:
+    driver: overlay
+
